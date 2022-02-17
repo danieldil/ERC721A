@@ -128,8 +128,7 @@ contract SquareBears is ERC721A, Ownable{
         uint256 withdrawAmount_20 = address(this).balance * 20/100;
         uint256 withdrawAmount_5 = address(this).balance * 5/100;
         payable(0xC44146197386B2b23c11FFbb37D91a004f5bd829).transfer(withdrawAmount_20);
-        payable(0xC44146197386B2b23c11FFbb37D91a004f5bd829).transfer(withdrawAmount_5);
-        0xBD584cE590B7dcdbB93b11e095d9E1D5880B44d9
+        payable(0xBD584cE590B7dcdbB93b11e095d9E1D5880B44d9).transfer(withdrawAmount_5);
         payable(msg.sender).transfer(address(this).balance);
     }
 }
