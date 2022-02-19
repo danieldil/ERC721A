@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./ERC721A.sol";
@@ -8,9 +8,10 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 contract SquareBears is ERC721A, Ownable{
     using Strings for uint256;
 
-    uint256 public maxSupply = 8888;
-    uint256 public constant MAX_WHITELIST_SUPPLY = 2000;
-    uint256 public constant MAX_MINT = 3;
+    uint256 public constant MAX_SUPPLY = 6666;
+    uint256 public constant MAX_WHITELIST_SUPPLY = 2500;
+    uint256 public constant MAX_PUBLIC_MINT = 10;
+    uint256 public constant MAX_WHITELIST_MINT = 3;
     uint256 public constant PUBLIC_SALE_PRICE = .15 ether;
     uint256 public constant WHITELIST_SALE_PRICE = .14 ether;
 
@@ -23,10 +24,12 @@ contract SquareBears is ERC721A, Ownable{
     bool public publicSale;
     bool public whiteListSale;
     bool public pause;
+    bool public teamMinted;
 
     bytes32 private merkleRoot;
 
-    mapping(address => uint256) public totalMint;
+    mapping(address => uint256) public totalPublicMint;
+    mapping(address => uint256) public totalWhitelistMint;
 
     constructor() ERC721A("Square Bears", "SQB"){
 
@@ -38,26 +41,32 @@ contract SquareBears is ERC721A, Ownable{
     }
 
     function mint(uint256 _quantity) external payable callerIsUser{
-        require(publicSale, "Scare Bears :: Public sale is not yet activated, whitelist sale is still on going.");
-        require((totalSupply() + _quantity) <= maxSupply, "Scare Bears :: Cannot mint beyond max supply");
-        require((totalMint[msg.sender] +_quantity) <= MAX_MINT, "Scare Bears :: Already minted 3 times!");
-        require(msg.value >= (PUBLIC_SALE_PRICE * _quantity), "Scare Bears :: Payment is below the price");
+        require(publicSale, "Scare Bears :: Not Yet Active.");
+        require((totalSupply() + _quantity) <= MAX_SUPPLY, "Scare Bears :: Beyond Max Supply");
+        require((totalPublicMint[msg.sender] +_quantity) <= MAX_PUBLIC_MINT, "Scare Bears :: Already minted 3 times!");
+        require(msg.value >= (PUBLIC_SALE_PRICE * _quantity), "Scare Bears :: Below ");
 
-        totalMint[msg.sender] += _quantity;
+        totalPublicMint[msg.sender] += _quantity;
         _safeMint(msg.sender, _quantity);
     }
 
     function whitelistMint(bytes32[] memory _merkleProof, uint256 _quantity) external payable callerIsUser{
         require(whiteListSale, "Scare Bears :: Minting is on Pause");
-        require((totalSupply() + _quantity) <= maxSupply, "Scare Bears :: Cannot mint beyond max supply");
-        require((totalMint[msg.sender] + _quantity)  <= MAX_MINT, "Scare Bears :: Cannot mint beyond whitelist max mint!");
+        require((totalSupply() + _quantity) <= MAX_SUPPLY, "Scare Bears :: Cannot mint beyond max supply");
+        require((totalWhitelistMint[msg.sender] + _quantity)  <= MAX_WHITELIST_MINT, "Scare Bears :: Cannot mint beyond whitelist max mint!");
         require(msg.value >= (WHITELIST_SALE_PRICE * _quantity), "Scare Bears :: Payment is below the price");
         //create leaf node
         bytes32 sender = keccak256(abi.encodePacked(msg.sender));
         require(MerkleProof.verify(_merkleProof, merkleRoot, sender), "Scare Bears :: You are not whitelisted");
 
-        totalMint[msg.sender] += _quantity;
+        totalWhitelistMint[msg.sender] += _quantity;
         _safeMint(msg.sender, _quantity);
+    }
+
+    function teamMint() external onlyOwner{
+        require(!teamMinted, "Scare Bears :: Team already minted");
+        teamMinted = true;
+        _safeMint(msg.sender, 100);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -103,10 +112,6 @@ contract SquareBears is ERC721A, Ownable{
         return merkleRoot;
     }
 
-    function setMaxSupply(uint256 _maxSupply) external onlyOwner{
-        maxSupply = _maxSupply;
-    }
-
     function togglePause() external onlyOwner{
         pause = !pause;
     }
@@ -126,9 +131,7 @@ contract SquareBears is ERC721A, Ownable{
     function withdraw() external onlyOwner{
         //20% to the artist
         uint256 withdrawAmount_20 = address(this).balance * 20/100;
-        uint256 withdrawAmount_5 = address(this).balance * 5/100;
         payable(0xC44146197386B2b23c11FFbb37D91a004f5bd829).transfer(withdrawAmount_20);
-        payable(0xBD584cE590B7dcdbB93b11e095d9E1D5880B44d9).transfer(withdrawAmount_5);
         payable(msg.sender).transfer(address(this).balance);
     }
 }
