@@ -129,9 +129,15 @@ contract SquareBears is ERC721A, Ownable{
     }
 
     function withdraw() external onlyOwner{
-        //20% to the artist
-        uint256 withdrawAmount_20 = address(this).balance * 20/100;
+        //15% to utility wallet
+        uint256 withdrawAmount_15 = address(this).balance * 15/100;
+        //20% to artist (post utility)
+        uint256 withdrawAmount_20 = (address(this).balance - withdrawAmount_15) * 20/100;
+        //5% to advisor (post utility)
+        uint256 withdrawAmount_5 = (address(this).balance - withdrawAmount_15) * 5/100;
+        payable().transfer(withdrawAmount_15);
         payable(0xC44146197386B2b23c11FFbb37D91a004f5bd829).transfer(withdrawAmount_20);
+        payable(0xBD584cE590B7dcdbB93b11e095d9E1D5880B44d9).transfer(withdrawAmount_5);
         payable(msg.sender).transfer(address(this).balance);
     }
 }
